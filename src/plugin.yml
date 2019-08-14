@@ -1,0 +1,9 @@
+name: ProtectBuild
+version: 1.0
+author: chromestone
+main: com.github.chromestone.protect_build.ProtectBuild
+api-version: 1.14
+commands:
+  register:
+    description: Registers the player.
+    usage: /register
