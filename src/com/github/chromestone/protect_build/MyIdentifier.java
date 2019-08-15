@@ -80,12 +80,16 @@ public class MyIdentifier {
             return;
         }
 
-        boolean success = file.getParentFile().mkdirs();
+        File parentFile = file.getParentFile();
+        if (parentFile != null && !parentFile.exists()) {
 
-        if (!success) {
+            boolean success = parentFile.mkdirs();
 
-            logger.log(Level.SEVERE, "unable to create directories parent of identities.bin");
-            return;
+            if (!success) {
+
+                logger.log(Level.SEVERE, "unable to create directories parent of identities.bin");
+                return;
+            }
         }
 
         try (FileOutputStream fos = new FileOutputStream(file, false);

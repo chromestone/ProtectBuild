@@ -2,12 +2,9 @@ package com.github.chromestone.protect_build;
 
 import org.bukkit.command.*;
 import org.bukkit.entity.Player;
-import org.bukkit.metadata.FixedMetadataValue;
-import org.bukkit.metadata.MetadataValue;
 import org.bukkit.plugin.java.JavaPlugin;
 
 import java.util.*;
-import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 
 /**
@@ -16,35 +13,106 @@ import java.util.logging.Level;
  */
 public class RegisterCommand implements CommandExecutor {
 
-    private static final String REGISTER_KEY = "chromestone_register";
-    private static final long COOLDOWN = TimeUnit.NANOSECONDS.convert(5, TimeUnit.SECONDS);
-
     private final JavaPlugin plugin;
     private final MyIdentifier identifier;
     private final List<String> passwords;
-    private final int size;
+    private final long cooldownTime;
+    private final boolean doCooldown;
+    private final HashSet<UUID> cooldownSet;
 
-    RegisterCommand(JavaPlugin plugin, MyIdentifier identifier, List<String> passwords) {
+    RegisterCommand(JavaPlugin plugin, MyIdentifier identifier, List<String> passwords, long cooldownTime) {
 
         this.plugin = plugin;
         this.identifier = identifier;
         this.passwords = passwords;
-        size = passwords.size();
+        this.cooldownTime = cooldownTime;
+        this.doCooldown = cooldownTime > 0;
+
+        this.cooldownSet = doCooldown ? new HashSet<>() : null;
     }
 
-    private void addCooldown(Player p, boolean first) {
+    private boolean secureEquals(String sanitary, String tainted) {
 
-        long time = System.nanoTime();
+        boolean result = true;
 
-        if (!first) {
+        final int sLen = sanitary.length(), tLen = tainted.length();
 
-            p.removeMetadata(REGISTER_KEY, plugin);
-            p.setMetadata(REGISTER_KEY, new FixedMetadataValue(plugin, time));
+        int sIdx = 0, tIdx = 0;
+        // no short circuit
+        for (; sIdx < sLen & tIdx < tLen; sIdx++, tIdx++) {
+
+            if (sanitary.charAt(sIdx) != tainted.charAt(tIdx)) {
+
+                result = false;
+            }
         }
-        else {
 
-            p.setMetadata(REGISTER_KEY, new FixedMetadataValue(plugin, time));
+        if (tIdx < tLen) {
+
+            result = false;
+            for (; tIdx < tLen; tIdx++) {
+
+                if (tainted.charAt(tIdx) == '\0') {
+
+                    result = true;
+                }
+            }
+            // this prevents optimization
+            if (result) {
+
+                plugin.getLogger().log(Level.WARNING, "someone typed null character");
+            }
+
+            result = false;
         }
+        else if (result) {
+
+            result = sLen == tLen;
+        }
+
+        return result;
+    }
+
+    private boolean secureEquals(List<String> sanitary, List<String> tainted) {
+
+        boolean result = true;
+
+        final int sLen = sanitary.size(), tLen = tainted.size();
+
+        int sIdx = 0, tIdx = 0;
+        // no short circuit
+        for (; sIdx < sLen & tIdx < tLen; sIdx++, tIdx++) {
+
+            if (!secureEquals(sanitary.get(sIdx), tainted.get(tIdx))) {
+
+                result = false;
+            }
+        }
+
+        if (tIdx < tLen) {
+
+            result = false;
+            for (; tIdx < tLen; tIdx++) {
+
+                if (secureEquals(tainted.get(tIdx), "\0")) {
+
+                    result = true;
+                }
+            }
+            // this prevents optimization
+            if (result) {
+
+                plugin.getLogger().log(Level.WARNING, "someone typed null character (tLen > sLen)");
+            }
+
+            result = false;
+        }
+        else if (result) {
+
+            result = sLen == tLen;
+        }
+
+        return result;
     }
 
     @Override
@@ -53,7 +121,7 @@ public class RegisterCommand implements CommandExecutor {
         if (commandSender instanceof Player) {
 
             Player player = (Player) commandSender;
-            UUID id = player.getUniqueId();
+            final UUID id = player.getUniqueId();
 
             Optional<Integer> wrapId = identifier.getIdentity(id, plugin.getLogger());
             if (wrapId.isPresent()) {
@@ -62,64 +130,25 @@ public class RegisterCommand implements CommandExecutor {
                 return true;
             }
 
-            List<MetadataValue> metaList = player.getMetadata(REGISTER_KEY);
-            boolean first = metaList.isEmpty();
-            if (!first) {
-
-                if (metaList.size() != 1) {
-
-                    plugin.getLogger().log(Level.SEVERE,
-                            "collision with REGISTER KEY, multiple metadata found [{0}]",
-                            metaList.size());
-                    return true;
-                }
-
-                MetadataValue meta = metaList.get(0);
-
-                if (meta.getOwningPlugin() != plugin) {
-
-                    plugin.getLogger().log(Level.SEVERE, "REGISTER KEY set by other plugin");
-                    return true;
-                }
-
-                long time = System.nanoTime();
-                Object val = meta.value();
-
-                if (val instanceof Long) {
-
-                    if (time - (long) val < COOLDOWN) {
-
-                        return true;
-                    }
-                }
-                else if (val != null) {
-
-                    plugin.getLogger().log(Level.SEVERE,
-                                           "REGISTER KEY maps to value of type [{0}]", val.getClass());
-                    return true;
-                }
-            }
-
-            if (size != args.length) {
-
-                addCooldown(player, first);
+            if (doCooldown && cooldownSet.contains(id)) {
 
                 return true;
             }
 
-            boolean match = true;
-            for (int i = 0; i < size; i++) {
+            if (!secureEquals(passwords, Arrays.asList(args))) {
 
-                if (!passwords.get(i).equals(args[i])) {
+                if (doCooldown) {
 
-                    match = false;
-                    break;
+                    cooldownSet.add(id);
+
+                    plugin.getServer()
+                            .getScheduler()
+                            .runTaskLater(plugin,
+                                    () -> cooldownSet.remove(id),
+                                    cooldownTime);
                 }
-            }
 
-            if (!match) {
-
-                addCooldown(player, first);
+                player.sendMessage("Incorrect.");
 
                 return true;
             }

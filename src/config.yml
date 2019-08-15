@@ -1,2 +1,3 @@
 passphrases: []
+register-cooldown: 5
 chunk-spawns-until: 50

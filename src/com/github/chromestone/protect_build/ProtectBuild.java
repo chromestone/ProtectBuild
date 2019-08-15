@@ -1,8 +1,8 @@
 package com.github.chromestone.protect_build;
 
 import org.bukkit.*;
-import org.bukkit.command.ConsoleCommandSender;
-import org.bukkit.command.PluginCommand;
+import org.bukkit.block.BlockState;
+import org.bukkit.command.*;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.entity.Player;
 import org.bukkit.plugin.PluginManager;
@@ -28,27 +28,7 @@ public class ProtectBuild extends JavaPlugin {
     @Override
     public void onEnable() {
 
-        this.saveDefaultConfig();
-
-        FileConfiguration config = getConfig();
-
-        List<String> passphrases = config.getStringList("passphrases");
-        if (!passphrases.isEmpty()) {
-
-            PluginCommand pC = this.getCommand(REGISTER_COMMAND);
-            if (pC != null) {
-
-                pC.setExecutor(new RegisterCommand(this, identifier, passphrases));
-            } else {
-
-                getLogger().log(Level.SEVERE, "getCommand failed");
-            }
-        }
-        else {
-
-            getLogger().log(Level.WARNING, "disabled register command since passphrases empty. " +
-                                           "unless previously registered, players cannot do anything");
-        }
+        // take care of class attributes
 
         String dataDir = this.getDataFolder().getAbsolutePath();
 
@@ -60,7 +40,36 @@ public class ProtectBuild extends JavaPlugin {
             return;
         }
 
-        //ProtectHandler handler = new ProtectHandler(this.getDataFolder().getAbsolutePath());
+        // take care of configuration
+
+        this.saveDefaultConfig();
+
+        FileConfiguration config = getConfig();
+
+        List<String> passphrases = config.getStringList("passphrases");
+        if (!passphrases.isEmpty()) {
+
+            long cooldownTime = config.getLong("register-cooldown", 5);
+            if (cooldownTime > 0) {
+
+                cooldownTime *= TPS;
+            }
+            PluginCommand pC = this.getCommand(REGISTER_COMMAND);
+            if (pC != null) {
+
+                pC.setExecutor(new RegisterCommand(this, identifier, passphrases, cooldownTime));
+            }
+            else {
+
+                getLogger().log(Level.SEVERE, "getCommand failed");
+            }
+        }
+        else {
+
+            getLogger().log(Level.WARNING, "disabled register command since passphrases empty\n" +
+                                           "unless previously registered, players cannot do anything\n" +
+                                           "please modify ProtectBuild/config.yml");
+        }
 
         Server server = getServer();
         PluginManager pM = server.getPluginManager();
@@ -72,7 +81,12 @@ public class ProtectBuild extends JavaPlugin {
         }
         pM.registerEvents(new CancellerListener(this, identifier, maxEntities), this);
 
+
+        //ProtectHandler handler = new ProtectHandler(this.getDataFolder().getAbsolutePath());
         //pM.registerEvents(new ChunkListener(this, handler), this);
+
+
+        // run later stuff here
 
         BukkitScheduler scheduler = server.getScheduler();
 
@@ -83,14 +97,39 @@ public class ProtectBuild extends JavaPlugin {
 
             s.dispatchCommand(cs, "gamerule mobGriefing false");
             s.dispatchCommand(cs, "gamerule doFireTick false");
+            s.dispatchCommand(cs, "gamerule maxEntityCramming 4");
 
-            s.dispatchCommand(cs, "difficulty normal");
-
-            s.dispatchCommand(cs, "setworldspawn 0 64 0");
-            s.dispatchCommand(cs, "gamerule spawnRadius 10");
+            s.dispatchCommand(cs, "setworldspawn 0 255 0");
+            s.dispatchCommand(cs, "gamerule spawnRadius 0");
 
             s.dispatchCommand(cs, "worldborder center 0 0");
             s.dispatchCommand(cs, "worldborder set 2048");
+
+            World world = null;
+            for (World w : s.getWorlds()) {
+
+                if (w.getEnvironment() == World.Environment.NORMAL) {
+
+                    world = w;
+                    break;
+                }
+            }
+
+            if (world == null) {
+
+                getLogger().log(Level.SEVERE, "unable to find overworld (normal) for spawn adjustments");
+                return;
+            }
+
+            BlockState block;
+
+            block = world.getBlockAt(0, 255, 0).getState();
+            block.setType(Material.SMOOTH_QUARTZ_STAIRS);
+            block.update(true);
+
+            block = world.getBlockAt(0, 254, 0).getState();
+            block.setType(Material.WATER);
+            block.update(true);
         });
 
         scheduler.runTaskTimer(this, () -> {
@@ -101,6 +140,7 @@ public class ProtectBuild extends JavaPlugin {
 
                     Location loc = player.getLocation();
 
+                    // assumes world spawn at (x=0, z=0)
                     if (loc.getX() > 1024 || loc.getX() < -1024 || loc.getZ() > 1024 || loc.getZ() < -1024) {
 
                         player.setHealth(0);

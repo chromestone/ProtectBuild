@@ -20,12 +20,14 @@ public class CancellerListener implements Listener {
     private final JavaPlugin plugin;
     private final MyIdentifier identifier;
     private final int maxEntities;
+    private final boolean doLimit;
 
     CancellerListener(JavaPlugin plugin, MyIdentifier identifier, int maxEntities) {
 
         this.plugin = plugin;
         this.identifier = identifier;
         this.maxEntities = maxEntities;
+        this.doLimit = maxEntities >= 0;
     }
 
     private void checkRegistration(Cancellable cancellable, Player player) {
@@ -150,7 +152,7 @@ public class CancellerListener implements Listener {
     @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
     public void onCreatureSpawn(CreatureSpawnEvent event) {
 
-        if (event.getLocation().getChunk().getEntities().length > maxEntities) {
+        if (doLimit && event.getLocation().getChunk().getEntities().length > maxEntities) {
 
             event.setCancelled(true);
         }
