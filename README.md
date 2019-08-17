@@ -1,5 +1,5 @@
 # ProtectBuild
-A Spigot Minecraft Plugin
+A Spigot Minecraft 1.14 Plugin
 
 ** WIP, DO NOT USE **
 

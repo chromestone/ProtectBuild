@@ -9,3 +9,7 @@ Here are the important settings:
 * max-world-size=29999984
 * allow-flight=false
 * spawn-animals=false
+
+I highly recommend you change the server seed.
+
+Also for Spigot, there are seeds in the spigot.yml. You should change those as well.
