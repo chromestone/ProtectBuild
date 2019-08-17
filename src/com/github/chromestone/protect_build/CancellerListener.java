@@ -31,6 +31,19 @@ public class CancellerListener implements Listener {
             Material.RED_MUSHROOM,
             Material.WATER_BUCKET
     );
+    private static final EnumSet<Material> LOG_SET = EnumSet.of(
+            Material.ACACIA_LOG,
+            Material.BIRCH_LOG,
+            Material.DARK_OAK_LOG,
+            Material.JUNGLE_LOG,
+            Material.OAK_LOG,
+            Material.SPRUCE_LOG,
+            Material.STRIPPED_ACACIA_LOG,
+            Material.STRIPPED_BIRCH_LOG,
+            Material.STRIPPED_DARK_OAK_LOG,
+            Material.STRIPPED_JUNGLE_LOG,
+            Material.STRIPPED_OAK_LOG,
+            Material.STRIPPED_SPRUCE_LOG);
 
     private final JavaPlugin plugin;
     private final MyIdentifier identifier;
@@ -156,8 +169,15 @@ public class CancellerListener implements Listener {
             if (x <= 16 && x >= -16 && z <= 16 && z >= -16) {
 
                 Action action = event.getAction();
+                if (action == Action.LEFT_CLICK_BLOCK) {
+
+                    if (LOG_SET.contains(event.getMaterial())) {
+
+                        event.setCancelled(true);
+                    }
+                }
                 //TODO test this
-                if (action != Action.RIGHT_CLICK_BLOCK) {// && action != Action.RIGHT_CLICK_AIR) {
+                else if (action != Action.RIGHT_CLICK_BLOCK) {// && action != Action.RIGHT_CLICK_AIR) {
 
                     event.setCancelled(true);
 

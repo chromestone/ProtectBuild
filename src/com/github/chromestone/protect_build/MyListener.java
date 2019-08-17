@@ -5,7 +5,7 @@ import org.bukkit.block.Block;
 import org.bukkit.entity.Player;
 import org.bukkit.event.*;
 import org.bukkit.event.block.*;
-import org.bukkit.event.player.PlayerRespawnEvent;
+import org.bukkit.event.player.*;
 import org.bukkit.event.world.*;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.potion.*;
@@ -35,6 +35,13 @@ public class MyListener implements Listener {
         applyResistance = resistDuration > 0;
     }
 
+    @EventHandler
+    public void onPlayerJoin(PlayerJoinEvent event) {
+
+        event.getPlayer().sendMessage("Welcome to the (Alpha) Protect Build server.\n" +
+                                      "Please note the nether and the end are disabled.");
+    }
+
     @EventHandler(priority = EventPriority.LOW)
     public void onPlayerRespawn(PlayerRespawnEvent event) {
 
@@ -61,21 +68,32 @@ public class MyListener implements Listener {
     @EventHandler
     public void onChunkLoad(ChunkLoadEvent event) {
 
-        plugin.getServer().broadcastMessage(My2DPoint.fromChunk(event.getChunk()).toString());
-        handler.loadChunk(event.getChunk(), plugin.getLogger());
+        //plugin.getServer().broadcastMessage(My2DPoint.fromChunk(event.getChunk()).toString());
+        if (event.getWorld().getEnvironment() == World.Environment.NORMAL) {
+
+            handler.loadChunk(event.getChunk(), plugin.getLogger());
+        }
     }
 
     @EventHandler
     public void onChunkUnload(ChunkUnloadEvent event) {
 
-        plugin.getServer().broadcastMessage(My2DPoint.fromChunk(event.getChunk()).toString());
-        handler.unloadChunk(event.getChunk(), plugin.getLogger());
+        //plugin.getServer().broadcastMessage(My2DPoint.fromChunk(event.getChunk()).toString());
+        if (event.getWorld().getEnvironment() == World.Environment.NORMAL) {
+
+            handler.unloadChunk(event.getChunk(), plugin.getLogger());
+        }
     }
 
     @EventHandler(priority = HIGH, ignoreCancelled = true)
     public void onBlockPlace(BlockPlaceEvent event) {
 
         final Player player = event.getPlayer();
+
+        if (player.getWorld().getEnvironment() != World.Environment.NORMAL) {
+
+            return;
+        }
 
         Optional<Integer> wrapped = identifier.getIdentity(player.getUniqueId(), plugin.getLogger());
         if (!wrapped.isPresent()) {
@@ -87,7 +105,7 @@ public class MyListener implements Listener {
         Integer identity = wrapped.get();
         final Block block = event.getBlock();
 
-        plugin.getServer().broadcastMessage(My2DPoint.fromChunk(block.getChunk()).toString());
+        //plugin.getServer().broadcastMessage(My2DPoint.fromChunk(block.getChunk()).toString());
 
         Optional<Boolean> isOwner = handler.isBlockOwner(block, identity);
         if (!isOwner.isPresent()) {
@@ -109,6 +127,11 @@ public class MyListener implements Listener {
     public void onBlockBreak(BlockBreakEvent event) {
 
         final Player player = event.getPlayer();
+
+        if (player.getWorld().getEnvironment() != World.Environment.NORMAL) {
+
+            return;
+        }
 
         Optional<Integer> wrapped = identifier.getIdentity(player.getUniqueId(), plugin.getLogger());
         if (!wrapped.isPresent()) {
