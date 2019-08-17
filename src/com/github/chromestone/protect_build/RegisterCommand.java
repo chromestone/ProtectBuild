@@ -3,6 +3,7 @@ package com.github.chromestone.protect_build;
 import org.bukkit.command.*;
 import org.bukkit.entity.Player;
 import org.bukkit.plugin.java.JavaPlugin;
+import org.bukkit.potion.*;
 
 import java.util.*;
 import java.util.logging.Level;
@@ -14,21 +15,31 @@ import java.util.logging.Level;
 public class RegisterCommand implements CommandExecutor {
 
     private final JavaPlugin plugin;
+
     private final MyIdentifier identifier;
     private final List<String> passwords;
+
     private final long cooldownTime;
     private final boolean doCooldown;
     private final HashSet<UUID> cooldownSet;
 
-    RegisterCommand(JavaPlugin plugin, MyIdentifier identifier, List<String> passwords, long cooldownTime) {
+    private final int resistDuration;
+    private final boolean applyResistance;
+
+    RegisterCommand(JavaPlugin plugin, MyIdentifier identifier, List<String> passwords,
+                    long cooldownTime, int resistDuration) {
 
         this.plugin = plugin;
         this.identifier = identifier;
         this.passwords = passwords;
+
         this.cooldownTime = cooldownTime;
         this.doCooldown = cooldownTime > 0;
 
         this.cooldownSet = doCooldown ? new HashSet<>() : null;
+
+        this.resistDuration = resistDuration;
+        this.applyResistance = resistDuration > 0;
     }
 
     private boolean secureEquals(String sanitary, String tainted) {
@@ -154,6 +165,14 @@ public class RegisterCommand implements CommandExecutor {
             }
 
             identifier.registerIdentity(id);
+
+            if (applyResistance) {
+
+                player.addPotionEffect(new PotionEffect(PotionEffectType.DAMAGE_RESISTANCE,
+                                                        resistDuration, 5,
+                                                        false, false),
+                                       true);
+            }
 
             player.sendMessage("Welcome to the server.");
 

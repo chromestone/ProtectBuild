@@ -46,6 +46,12 @@ public class ProtectBuild extends JavaPlugin {
 
         FileConfiguration config = getConfig();
 
+        int resistDuration = config.getInt("resistance-duration", 5);
+        if (resistDuration > 0) {
+
+            resistDuration *= (int) TPS;
+        }
+
         List<String> passphrases = config.getStringList("passphrases");
         if (!passphrases.isEmpty()) {
 
@@ -54,10 +60,12 @@ public class ProtectBuild extends JavaPlugin {
 
                 cooldownTime *= TPS;
             }
+
             PluginCommand pC = this.getCommand(REGISTER_COMMAND);
             if (pC != null) {
 
-                pC.setExecutor(new RegisterCommand(this, identifier, passphrases, cooldownTime));
+                pC.setExecutor(new RegisterCommand(this, identifier, passphrases,
+                                                   cooldownTime, resistDuration));
             }
             else {
 
@@ -80,11 +88,10 @@ public class ProtectBuild extends JavaPlugin {
             getLogger().log(Level.INFO, "negative chunk-spawns-until, NO spawning limits will be imposed");
         }
         pM.registerEvents(new CancellerListener(this, identifier, maxEntities), this);
-
+        // TODO HANDLER
+        pM.registerEvents(new MyListener(this, null, resistDuration), this);
 
         //ProtectHandler handler = new ProtectHandler(this.getDataFolder().getAbsolutePath());
-        //pM.registerEvents(new ChunkListener(this, handler), this);
-
 
         // run later stuff here
 
