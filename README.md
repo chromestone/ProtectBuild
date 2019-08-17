@@ -1,6 +1,8 @@
 # ProtectBuild
 A Spigot Minecraft Plugin
 
+** WIP, DO NOT USE **
+
 The goal is to _reduce_ griefing.
 
 (Unfortunately there is a tradeoff between security and utility...)
@@ -27,3 +29,8 @@ The goal is to _reduce_ griefing.
 * Actually preventing players from destroying/interacting with blocks placed by other players
 * Villager protection
 * Tree farm at spawn (to prevent tree griefing)
+* Preventing all portal creation not from default world
+* With the above, some kind of "home" and "spawn" commands need to exist.
+
+## Assumptions
+The server is using the normal "3" world system. (You can disable nether or the end dimensions.)
