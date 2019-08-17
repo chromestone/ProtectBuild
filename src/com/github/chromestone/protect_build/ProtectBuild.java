@@ -24,6 +24,7 @@ public class ProtectBuild extends JavaPlugin {
     private final static long TPS = 20;
 
     private MyIdentifier identifier = null;
+    private ProtectHandler protectHandler = null;
 
     @Override
     public void onEnable() {
@@ -39,6 +40,8 @@ public class ProtectBuild extends JavaPlugin {
             getLogger().log(Level.SEVERE, "ProtectBuild plugin NOT loading due to error");
             return;
         }
+
+        protectHandler = new ProtectHandler(this.getDataFolder().getAbsolutePath());
 
         // take care of configuration
 
@@ -87,11 +90,10 @@ public class ProtectBuild extends JavaPlugin {
 
             getLogger().log(Level.INFO, "negative chunk-spawns-until, NO spawning limits will be imposed");
         }
-        pM.registerEvents(new CancellerListener(this, identifier, maxEntities), this);
-        // TODO HANDLER
-        pM.registerEvents(new MyListener(this, null, resistDuration), this);
 
-        //ProtectHandler handler = new ProtectHandler(this.getDataFolder().getAbsolutePath());
+        pM.registerEvents(new CancellerListener(this, identifier, maxEntities), this);
+
+        pM.registerEvents(new MyListener(this, identifier, protectHandler, resistDuration), this);
 
         // run later stuff here
 
@@ -137,6 +139,11 @@ public class ProtectBuild extends JavaPlugin {
             block = world.getBlockAt(0, 254, 0).getState();
             block.setType(Material.WATER);
             block.update(true);
+
+            for (Chunk chunk : world.getLoadedChunks()) {
+
+                protectHandler.loadChunk(chunk, getLogger());
+            }
         });
 
         scheduler.runTaskTimer(this, () -> {
@@ -164,6 +171,13 @@ public class ProtectBuild extends JavaPlugin {
         if (identifier != null) {
 
             identifier.save(getLogger());
+            identifier = null;
+        }
+
+        if (protectHandler != null) {
+
+            protectHandler.save(getLogger());
+            protectHandler = null;
         }
     }
 }

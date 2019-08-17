@@ -8,30 +8,30 @@ import java.io.Serializable;
  * The MyPoint class
  * Created by Derek Zhang on 8/6/19.
  */
-public class MyPoint implements Serializable {
+public class My2DPoint implements Serializable {
 
-    private static final long serialVersionUID = -389399447051164051L;;
+    private static final long serialVersionUID = -389399447051164051L;
 
     final int x;
     final int y;
 
-    public MyPoint(int x, int y) {
+    public My2DPoint(int x, int y) {
 
         this.x = x;
         this.y = y;
     }
 
-    static MyPoint fromChunk(Chunk c) {
+    static My2DPoint fromChunk(Chunk c) {
 
-        return new MyPoint(c.getX(), c.getZ());
+        return new My2DPoint(c.getX(), c.getZ());
     }
 
     @Override
     public boolean equals(Object obj) {
 
-        if (obj instanceof MyPoint) {
+        if (obj instanceof My2DPoint) {
 
-            MyPoint p = (MyPoint) obj;
+            My2DPoint p = (My2DPoint) obj;
             return this.x == p.x && this.y == p.y;
         }
         return false;
@@ -40,8 +40,8 @@ public class MyPoint implements Serializable {
     // derived from Bukkit source code
     // see https://hub.spigotmc.org/stash/projects/SPIGOT/repos/bukkit/browse
     @Override
-    public int hashCode()
-    {
+    public int hashCode() {
+
         int hash = 7;
 
         hash = 79 * hash + (int)(Double.doubleToLongBits(this.x) ^ Double.doubleToLongBits(this.x) >>> 32);

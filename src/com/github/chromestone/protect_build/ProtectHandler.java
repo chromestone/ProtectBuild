@@ -2,7 +2,6 @@ package com.github.chromestone.protect_build;
 
 import org.bukkit.Chunk;
 import org.bukkit.block.Block;
-import org.bukkit.util.Vector;
 
 import java.io.*;
 import java.nio.file.*;
@@ -23,7 +22,7 @@ public class ProtectHandler {
     private final String dataDir;
 
     private final ExecutorService executor;
-    private final ConcurrentHashMap<MyPoint, HashMap<Object, Object>> data;
+    private final ConcurrentHashMap<My2DPoint, HashMap<Object, Object>> data;
 
     public ProtectHandler(String dataDir) {
 
@@ -36,16 +35,17 @@ public class ProtectHandler {
     @SuppressWarnings("unchecked")
     public void loadChunk(Chunk c, final Logger logger) {
 
-        final MyPoint point = MyPoint.fromChunk(c);
+        final My2DPoint point = My2DPoint.fromChunk(c);
         executor.submit(() -> {
 
             int regionX = point.x / REGION_SIZE, regionY = point.y / REGION_SIZE;
             Path path = Paths.get(dataDir, regionX + "." + regionY, point.x + "." + point.y + ".bin");
             File file = path.toFile();
 
-            if (!file.isDirectory()) {
+            if (file.isDirectory()) {
 
-                logger.log(Level.SEVERE, "cannot load chunk [{0}]: file already exists as directory", point);
+                logger.log(Level.SEVERE,
+                           "cannot load data for chunk [{0}]: file already exists as directory", point);
                 return;
             }
 
@@ -63,12 +63,14 @@ public class ProtectHandler {
                     else {
 
                         logger.log(Level.SEVERE,
-                                   "cannot load chunk [{0}]: file does not deserialize to a hash-map", point);
+                                   "cannot load data for chunk [{0}]: file does not deserialize to a hash-map",
+                                   point);
                     }
                 }
                 catch (Exception e) {
 
-                    logger.log(Level.SEVERE, "cannot load chunk [" + point + "] unable to deserialize", e);
+                    logger.log(Level.SEVERE,
+                               "cannot load data for chunk [" + point + "]: unable to deserialize", e);
                 }
             }
             else {
@@ -78,29 +80,133 @@ public class ProtectHandler {
         });
     }
 
-    public void unloadChunk(Chunk c) {
+    private void saveMap(My2DPoint point, HashMap<Object, Object> map, Logger logger) {
 
-        //TODO
-        data.remove(MyPoint.fromChunk(c));
+        int regionX = point.x / REGION_SIZE, regionY = point.y / REGION_SIZE;
+        Path path = Paths.get(dataDir, regionX + "." + regionY, point.x + "." + point.y + ".bin");
+        File file = path.toFile();
+
+        if (file.isDirectory()) {
+
+            logger.log(Level.SEVERE,
+                       "cannot save data for chunk [{0}]: file already exists as directory", point);
+            return;
+        }
+
+        File parentFile = file.getParentFile();
+        if (parentFile != null && !parentFile.exists()) {
+
+            boolean success = parentFile.mkdirs();
+
+            if (!success) {
+
+                logger.log(Level.SEVERE,
+                           "cannot save data for chunk [{0}]: unable to create parent directories", point);
+                return;
+            }
+        }
+
+        try (FileOutputStream fos = new FileOutputStream(file, false);
+             ObjectOutputStream oos = new ObjectOutputStream(fos)) {
+
+            oos.writeObject(map);
+        }
+        catch (Exception e) {
+
+            logger.log(Level.SEVERE, "cannot load data for chunk [\" + point + \"]: unable to serialize", e);
+        }
     }
 
-    public boolean setBlockOwner(Block b, Integer identity) {//Player p, Block b) {
+    public void unloadChunk(Chunk c, final Logger logger) {
 
-        MyPoint point = MyPoint.fromChunk(b.getChunk());
+        final My2DPoint point = My2DPoint.fromChunk(c);
+        executor.submit(() -> {
+
+            HashMap<Object, Object> map = data.remove(point);
+
+            if (map == SENTINEL) {
+
+                return;
+            }
+
+            if (map == null) {
+
+                logger.log(Level.WARNING, "unload chunk called to save on null map");
+                return;
+            }
+
+            saveMap(point, map, logger);
+        });
+    }
+
+    public void save(Logger logger) {
+
+        logger.log(Level.INFO,
+                   "Attempting to save data for chunks... (can take up to 1 minute) please be patient.");
+
+        final ConcurrentHashMap.KeySetView<My2DPoint, HashMap<Object, Object>> keys = data.keySet();
+
+        for (final My2DPoint point : keys) {
+
+            executor.submit(() -> {
+
+                // no need to remove since teardown in progress
+                HashMap<Object, Object> map = data.get(point);
+
+                if (map == SENTINEL || map == null) {
+
+                    return;
+                }
+
+                saveMap(point, map, logger);
+            });
+        }
+
+        try {
+
+            executor.shutdown();
+            boolean result = executor.awaitTermination(1L, TimeUnit.MINUTES);
+            if (!result) {
+
+                logger.log(Level.SEVERE,
+                           "unable to finish saving data for chunks in time, loss of grief protection possible");
+            }
+        }
+        catch (InterruptedException e) {
+
+            logger.log(Level.WARNING, "thread executor wait interrupted", e);
+        }
+
+        executor.shutdownNow();
+    }
+
+    public boolean setBlockOwner(Block b, Integer identity) {
+
+        My2DPoint point = My2DPoint.fromChunk(b.getChunk());
         HashMap<Object, Object> owners = data.get(point);
         if (owners == SENTINEL) {
 
             owners = new HashMap<>();
             data.put(point, owners);
         }
-        owners.put(new Vector(b.getX(), b.getY(), b.getZ()), identity);
+        owners.put(My3DPoint.fromBlock(b), identity);
 
         return true;
     }
 
-    public Optional<Boolean> isBlockOwner(Block b, Integer identity) {//Player p, Block b) {
+    public void removeBlockOwner(Block b) {
 
-        HashMap<Object, Object> owners = data.get(MyPoint.fromChunk(b.getChunk()));
+        My2DPoint point = My2DPoint.fromChunk(b.getChunk());
+        HashMap<Object, Object> owners = data.get(point);
+        if (owners != SENTINEL) {
+
+            owners.remove(My3DPoint.fromBlock(b));
+        }
+    }
+
+    public Optional<Boolean> isBlockOwner(Block b, Integer identity) {
+
+        HashMap<Object, Object> owners = data.get(My2DPoint.fromChunk(b.getChunk()));
 
         if (owners == SENTINEL) {
 
@@ -111,7 +217,7 @@ public class ProtectHandler {
             return Optional.empty();
         }
 
-        Object owner = owners.get(new Vector(b.getX(), b.getY(), b.getZ()));
+        Object owner = owners.get(My3DPoint.fromBlock(b));
 
         if (owner == null) {
 

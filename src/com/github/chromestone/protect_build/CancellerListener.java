@@ -19,6 +19,19 @@ import java.util.*;
  */
 public class CancellerListener implements Listener {
 
+    private static final EnumSet<Material> TREE_FARM_ALLOWED = EnumSet.of(
+            Material.BONE_MEAL,
+            Material.ACACIA_SAPLING,
+            Material.BIRCH_SAPLING,
+            Material.DARK_OAK_SAPLING,
+            Material.JUNGLE_SAPLING,
+            Material.OAK_SAPLING,
+            Material.SPRUCE_SAPLING,
+            Material.BROWN_MUSHROOM,
+            Material.RED_MUSHROOM,
+            Material.WATER_BUCKET
+    );
+
     private final JavaPlugin plugin;
     private final MyIdentifier identifier;
     private final int maxEntities;
@@ -127,7 +140,7 @@ public class CancellerListener implements Listener {
             return;
         }
 
-        Block block = event.getClickedBlock();
+        final Block block = event.getClickedBlock();
         if (block != null) {
 
             if (block.getWorld().getEnvironment() != World.Environment.NORMAL) {
@@ -135,38 +148,29 @@ public class CancellerListener implements Listener {
                 return;
             }
 
-            //TODO use blockface to prevent "overreach"
+            final Block target = block.getRelative(event.getBlockFace());
 
-            final Location location = block.getLocation();
+            final Location location = target.getLocation();
             final int x = location.getBlockX(), z = location.getBlockZ();
 
             if (x <= 16 && x >= -16 && z <= 16 && z >= -16) {
 
                 Action action = event.getAction();
-                if (action != Action.RIGHT_CLICK_BLOCK && action != Action.RIGHT_CLICK_AIR) {
+                //TODO test this
+                if (action != Action.RIGHT_CLICK_BLOCK) {// && action != Action.RIGHT_CLICK_AIR) {
 
                     event.setCancelled(true);
+
+                    event.getPlayer().sendMessage(ChatColor.RED + "You are in the tree farm zone.");
                 }
                 else {
 
-                    Material material = event.getMaterial();
-                    switch (material) {
-
-                        case BONE_MEAL:
-                        case ACACIA_SAPLING:
-                        case BIRCH_SAPLING:
-                        case DARK_OAK_SAPLING:
-                        case JUNGLE_SAPLING:
-                        case OAK_SAPLING:
-                        case SPRUCE_SAPLING:
-                        case BROWN_MUSHROOM:
-                        case RED_MUSHROOM:
-                        case WATER_BUCKET:
-
-                            break;
-                        default:
+                    final Material material = event.getMaterial();
+                    if (!TREE_FARM_ALLOWED.contains(material)) {
 
                             event.setCancelled(true);
+
+                            event.getPlayer().sendMessage(ChatColor.RED + "You are in the tree farm zone.");
                     }
                 }
             }
