@@ -171,7 +171,9 @@ public class CancellerListener implements Listener {
                 Action action = event.getAction();
                 if (action == Action.LEFT_CLICK_BLOCK) {
 
-                    if (LOG_SET.contains(event.getMaterial())) {
+                    final Material material = event.getMaterial();
+                    if (!TREE_FARM_ALLOWED.contains(material) &&
+                        !LOG_SET.contains(material)) {
 
                         event.setCancelled(true);
                     }
