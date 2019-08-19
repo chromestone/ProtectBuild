@@ -1,4 +1,7 @@
 passphrases: []
-register-cooldown: 5
+command-cooldown:
+  register: 5
+  spawn: 1800
+  home: 1800
 chunk-spawns-until: 50
 resistance-duration: 5

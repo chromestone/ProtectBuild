@@ -1,6 +1,6 @@
 package com.github.chromestone.protect_build;
 
-import org.bukkit.Chunk;
+import org.bukkit.*;
 import org.bukkit.block.Block;
 
 import java.io.*;
@@ -28,12 +28,18 @@ public class ProtectHandler {
 
         this.dataDir = dataDir;
 
+        //TODO make threads configurable
         executor = Executors.newFixedThreadPool(5 * Runtime.getRuntime().availableProcessors());
         data = new ConcurrentHashMap<>();
     }
 
     @SuppressWarnings("unchecked")
     public void loadChunk(Chunk c, final Logger logger) {
+
+        if (executor.isShutdown()) {
+
+            return;
+        }
 
         final My2DPoint point = My2DPoint.fromChunk(c);
         executor.submit(() -> {
@@ -113,11 +119,16 @@ public class ProtectHandler {
         }
         catch (Exception e) {
 
-            logger.log(Level.SEVERE, "cannot load data for chunk [\" + point + \"]: unable to serialize", e);
+            logger.log(Level.SEVERE, "cannot save data for chunk [\" + point + \"]: unable to serialize", e);
         }
     }
 
     public void unloadChunk(Chunk c, final Logger logger) {
+
+        if (executor.isShutdown()) {
+
+            return;
+        }
 
         final My2DPoint point = My2DPoint.fromChunk(c);
         executor.submit(() -> {
@@ -131,7 +142,7 @@ public class ProtectHandler {
 
             if (map == null) {
 
-                logger.log(Level.WARNING, "unload chunk called to save on null map");
+                logger.log(Level.WARNING, "cannot save data for chunk [{0}]: map is null", point);
                 return;
             }
 
@@ -141,8 +152,10 @@ public class ProtectHandler {
 
     public void save(Logger logger) {
 
-        logger.log(Level.INFO,
-                   "Attempting to save data for chunks... (can take up to 1 minute) please be patient.");
+        if (executor.isShutdown()) {
+
+            return;
+        }
 
         final ConcurrentHashMap.KeySetView<My2DPoint, HashMap<Object, Object>> keys = data.keySet();
 
@@ -161,6 +174,18 @@ public class ProtectHandler {
                 saveMap(point, map, logger);
             });
         }
+    }
+
+    /**
+     * Once you call this, don't use this class again! Make the reference null if you want.
+     * @param logger The logger object to use for logging.
+     */
+    public void finalSave(Logger logger) {
+
+        logger.log(Level.INFO,
+                   "Attempting to save data for chunks... (can take up to 1 minute) please be patient.");
+
+        save(logger);
 
         try {
 
@@ -174,7 +199,8 @@ public class ProtectHandler {
         }
         catch (InterruptedException e) {
 
-            logger.log(Level.WARNING, "thread executor wait interrupted", e);
+            logger.log(Level.SEVERE,
+                       "wait on saving threads was interrupted, loss of grief protection possible", e);
         }
 
         executor.shutdownNow();
@@ -183,12 +209,18 @@ public class ProtectHandler {
     public boolean setBlockOwner(Block b, Integer identity) {
 
         My2DPoint point = My2DPoint.fromChunk(b.getChunk());
+        //Bukkit.broadcastMessage("set: " + identity + " | " + point + " | " + My3DPoint.fromBlock(b));
         HashMap<Object, Object> owners = data.get(point);
         if (owners == SENTINEL) {
 
             owners = new HashMap<>();
             data.put(point, owners);
         }
+        else if (owners == null) {
+
+            return false;
+        }
+
         owners.put(My3DPoint.fromBlock(b), identity);
 
         return true;
@@ -197,6 +229,7 @@ public class ProtectHandler {
     public void removeBlockOwner(Block b) {
 
         My2DPoint point = My2DPoint.fromChunk(b.getChunk());
+        //Bukkit.broadcastMessage("remove: " + point.toString());
         HashMap<Object, Object> owners = data.get(point);
         if (owners != SENTINEL) {
 
@@ -205,6 +238,9 @@ public class ProtectHandler {
     }
 
     public Optional<Boolean> isBlockOwner(Block b, Integer identity) {
+
+        //Bukkit.broadcastMessage("check: " + identity + " | " +
+        //        My2DPoint.fromChunk(b.getChunk()) + " | " + My3DPoint.fromBlock(b));
 
         HashMap<Object, Object> owners = data.get(My2DPoint.fromChunk(b.getChunk()));
 

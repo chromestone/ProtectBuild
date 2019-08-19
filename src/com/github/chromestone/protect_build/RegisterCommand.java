@@ -127,11 +127,11 @@ public class RegisterCommand implements CommandExecutor {
     }
 
     @Override
-    public boolean onCommand(CommandSender commandSender, Command command, String label, String[] args) {
+    public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
 
-        if (commandSender instanceof Player) {
+        if (sender instanceof Player) {
 
-            Player player = (Player) commandSender;
+            Player player = (Player) sender;
             final UUID id = player.getUniqueId();
 
             Optional<Integer> wrapId = identifier.getIdentity(id, plugin.getLogger());
@@ -174,12 +174,12 @@ public class RegisterCommand implements CommandExecutor {
                                        true);
             }
 
-            player.sendMessage("Welcome to the server.");
+            player.sendMessage("Welcome to the server. /help for help.");
 
             return true;
         }
 
-        commandSender.sendMessage("Invalid.");
-        return false;
+        sender.sendMessage("Invalid.");
+        return true;
     }
 }

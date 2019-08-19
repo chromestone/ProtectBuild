@@ -31,7 +31,7 @@ public class CancellerListener implements Listener {
             Material.RED_MUSHROOM,
             Material.WATER_BUCKET
     );
-    private static final EnumSet<Material> LOG_SET = EnumSet.of(
+    private static final EnumSet<Material> TREE_SET = EnumSet.of(
             Material.ACACIA_LOG,
             Material.BIRCH_LOG,
             Material.DARK_OAK_LOG,
@@ -43,7 +43,13 @@ public class CancellerListener implements Listener {
             Material.STRIPPED_DARK_OAK_LOG,
             Material.STRIPPED_JUNGLE_LOG,
             Material.STRIPPED_OAK_LOG,
-            Material.STRIPPED_SPRUCE_LOG);
+            Material.STRIPPED_SPRUCE_LOG,
+            Material.ACACIA_LEAVES,
+            Material.BIRCH_LEAVES,
+            Material.DARK_OAK_LEAVES,
+            Material.JUNGLE_LEAVES,
+            Material.OAK_LEAVES,
+            Material.SPRUCE_LEAVES);
 
     private final JavaPlugin plugin;
     private final MyIdentifier identifier;
@@ -153,7 +159,7 @@ public class CancellerListener implements Listener {
             return;
         }
 
-        final Block block = event.getClickedBlock();
+        Block block = event.getClickedBlock();
         if (block != null) {
 
             if (block.getWorld().getEnvironment() != World.Environment.NORMAL) {
@@ -161,38 +167,50 @@ public class CancellerListener implements Listener {
                 return;
             }
 
-            final Block target = block.getRelative(event.getBlockFace());
+            Action action = event.getAction();
 
-            final Location location = target.getLocation();
-            final int x = location.getBlockX(), z = location.getBlockZ();
+            if (action == Action.LEFT_CLICK_BLOCK) {
 
-            if (x <= 16 && x >= -16 && z <= 16 && z >= -16) {
+                Location location = block.getLocation();
+                final int x = location.getBlockX(), z = location.getBlockZ();
 
-                Action action = event.getAction();
-                if (action == Action.LEFT_CLICK_BLOCK) {
+                //TODO make size configurable
+                if (x <= 16 && x >= -16 && z <= 16 && z >= -16) {
 
-                    final Material material = event.getMaterial();
+                    Material material = block.getType();
                     if (!TREE_FARM_ALLOWED.contains(material) &&
-                        !LOG_SET.contains(material)) {
+                            !TREE_SET.contains(material)) {
 
                         event.setCancelled(true);
+
+                        event.getPlayer().sendMessage(ChatColor.RED + "You are in the tree farm zone.");
                     }
                 }
-                //TODO test this
-                else if (action != Action.RIGHT_CLICK_BLOCK) {// && action != Action.RIGHT_CLICK_AIR) {
+            }
+            else {
 
-                    event.setCancelled(true);
+                Block target = block.getRelative(event.getBlockFace());
+                Location location = target.getLocation();
+                final int x = location.getBlockX(), z = location.getBlockZ();
 
-                    event.getPlayer().sendMessage(ChatColor.RED + "You are in the tree farm zone.");
-                }
-                else {
+                //TODO make size configurable
+                if (x <= 16 && x >= -16 && z <= 16 && z >= -16) {
 
-                    final Material material = event.getMaterial();
-                    if (!TREE_FARM_ALLOWED.contains(material)) {
+                    if (action != Action.RIGHT_CLICK_BLOCK) {
+
+                        event.setCancelled(true);
+
+                        event.getPlayer().sendMessage(ChatColor.RED + "You are in the tree farm zone.");
+                    }
+                    else {
+
+                        Material material = event.getMaterial();
+                        if (!TREE_FARM_ALLOWED.contains(material)) {
 
                             event.setCancelled(true);
 
                             event.getPlayer().sendMessage(ChatColor.RED + "You are in the tree farm zone.");
+                        }
                     }
                 }
             }
@@ -289,6 +307,9 @@ public class CancellerListener implements Listener {
     @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
     public void onPortalCreate(PortalCreateEvent event) {
 
+        Bukkit.broadcastMessage(event.toString());
+        Bukkit.broadcastMessage(event.getReason().toString());
+
         final boolean netherPair = event.getReason() == PortalCreateEvent.CreateReason.NETHER_PAIR;
 
         if (event.getWorld().getEnvironment() != World.Environment.NORMAL) {
@@ -316,9 +337,9 @@ public class CancellerListener implements Listener {
     @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
     public void onStructureGrow(StructureGrowEvent event) {
 
-        final Location location = event.getLocation();
+        Location location = event.getLocation();
 
-        final World world = location.getWorld();
+        World world = location.getWorld();
         if (world == null || world.getEnvironment() != World.Environment.NORMAL) {
 
             return;
@@ -326,6 +347,7 @@ public class CancellerListener implements Listener {
 
         final int x = location.getBlockX(), z = location.getBlockZ();
 
+        //TODO make size configurable
         if (x > 16 || x < -16 || z > 16 || z < -16) {
 
             event.setCancelled(true);

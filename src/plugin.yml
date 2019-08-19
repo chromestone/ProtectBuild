@@ -7,3 +7,12 @@ commands:
   register:
     description: Registers the player.
     usage: /register
+  tpspawn:
+    description: Teleport to spawn.
+    usage: /tpspawn
+  tphome:
+    description: Teleport to player's designated home.
+    usage: /tphome
+  settphome:
+    description: Designates player's current location as their tphome.
+    usage: /settphome

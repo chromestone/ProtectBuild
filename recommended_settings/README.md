@@ -8,7 +8,6 @@ Here are the important settings:
 * pvp=false
 * max-world-size=29999984
 * allow-flight=false
-* spawn-animals=false
 
 I highly recommend you change the server seed.
 

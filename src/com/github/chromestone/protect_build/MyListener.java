@@ -35,13 +35,6 @@ public class MyListener implements Listener {
         applyResistance = resistDuration > 0;
     }
 
-    @EventHandler
-    public void onPlayerJoin(PlayerJoinEvent event) {
-
-        event.getPlayer().sendMessage("Welcome to the (Alpha) Protect Build server.\n" +
-                                      "Please note the nether and the end are disabled.");
-    }
-
     @EventHandler(priority = EventPriority.LOW)
     public void onPlayerRespawn(PlayerRespawnEvent event) {
 
@@ -50,7 +43,7 @@ public class MyListener implements Listener {
             return;
         }
 
-        final Location location = event.getRespawnLocation();
+        Location location = event.getRespawnLocation();
         final int x = location.getBlockX(), z = location.getBlockZ();
         if (x == 0 && z == 0) {
 
@@ -85,10 +78,68 @@ public class MyListener implements Listener {
         }
     }
 
+    @EventHandler
+    public void onWorldSave(WorldSaveEvent event) {
+
+        if (event.getWorld().getEnvironment() == World.Environment.NORMAL) {
+
+            handler.save(plugin.getLogger());
+        }
+    }
+
+    @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
+    public void onPlayerInteract(PlayerInteractEvent event) {
+
+        Block block = event.getClickedBlock();
+
+        if (block != null) {
+
+            if (block.getWorld().getEnvironment() != World.Environment.NORMAL) {
+
+                return;
+            }
+
+            Player player = event.getPlayer();
+            Optional<Integer> wrapped = identifier.getIdentity(player.getUniqueId(), plugin.getLogger());
+            if (!wrapped.isPresent()) {
+
+                event.setCancelled(true);
+                return;
+            }
+
+            Integer identity = wrapped.get();
+
+            Action action = event.getAction();
+            Block target;
+
+            if (action == Action.LEFT_CLICK_BLOCK) {
+
+                target = block;
+            }
+            else {
+
+                target = block.getRelative(event.getBlockFace());
+            }
+
+            Optional<Boolean> isOwner = handler.isBlockOwner(block, identity);
+            if (!isOwner.isPresent()) {
+
+                event.setCancelled(true);
+                player.sendMessage(ChatColor.YELLOW + "Something is slowing down grief protection. Contact admin?");
+                return;
+            }
+
+            if (!isOwner.get()) {
+
+                event.setCancelled(true);
+            }
+        }
+    }
+
     @EventHandler(priority = HIGH, ignoreCancelled = true)
     public void onBlockPlace(BlockPlaceEvent event) {
 
-        final Player player = event.getPlayer();
+        Player player = event.getPlayer();
 
         if (player.getWorld().getEnvironment() != World.Environment.NORMAL) {
 
@@ -103,7 +154,7 @@ public class MyListener implements Listener {
         }
 
         Integer identity = wrapped.get();
-        final Block block = event.getBlock();
+        Block block = event.getBlock();
 
         //plugin.getServer().broadcastMessage(My2DPoint.fromChunk(block.getChunk()).toString());
 
@@ -118,15 +169,21 @@ public class MyListener implements Listener {
         if (!isOwner.get()) {
 
             event.setCancelled(true);
+            return;
         }
 
-        handler.setBlockOwner(block, identity);
+        boolean result = handler.setBlockOwner(block, identity);
+
+        if (!result) {
+
+            player.sendMessage(ChatColor.RED + "Unable to activate grief protection. You are on your own.");
+        }
     }
 
     @EventHandler(priority = HIGH, ignoreCancelled = true)
     public void onBlockBreak(BlockBreakEvent event) {
 
-        final Player player = event.getPlayer();
+        Player player = event.getPlayer();
 
         if (player.getWorld().getEnvironment() != World.Environment.NORMAL) {
 
@@ -141,7 +198,7 @@ public class MyListener implements Listener {
         }
 
         Integer identity = wrapped.get();
-        final Block block = event.getBlock();
+        Block block = event.getBlock();
 
         Optional<Boolean> isOwner = handler.isBlockOwner(block, identity);
         if (!isOwner.isPresent()) {
@@ -154,6 +211,7 @@ public class MyListener implements Listener {
         if (!isOwner.get()) {
 
             event.setCancelled(true);
+            return;
         }
 
         handler.removeBlockOwner(block);
