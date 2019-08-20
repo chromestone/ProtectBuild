@@ -7,8 +7,7 @@ import java.io.*;
 import java.nio.file.*;
 import java.util.*;
 import java.util.concurrent.*;
-import java.util.logging.Level;
-import java.util.logging.Logger;
+import java.util.logging.*;
 
 /**
  * The ProtectHandler class
@@ -17,12 +16,12 @@ import java.util.logging.Logger;
 public class ProtectHandler {
 
     private static final int REGION_SIZE = 512;
-    private static final HashMap<Object, Object> SENTINEL = new HashMap<>();
+    private static final ConcurrentHashMap<Object, Object> SENTINEL = new ConcurrentHashMap<>();
 
     private final String dataDir;
 
     private final ExecutorService executor;
-    private final ConcurrentHashMap<My2DPoint, HashMap<Object, Object>> data;
+    private final ConcurrentHashMap<My2DPoint, ConcurrentHashMap<Object, Object>> data;
 
     public ProtectHandler(String dataDir) {
 
@@ -61,9 +60,9 @@ public class ProtectHandler {
                      ObjectInputStream ois = new ObjectInputStream(fis)) {
 
                     Object obj = ois.readObject();
-                    if (obj instanceof HashMap) {
+                    if (obj instanceof ConcurrentHashMap) {
 
-                        HashMap<Object, Object> map = (HashMap<Object, Object>) obj;
+                        ConcurrentHashMap<Object, Object> map = (ConcurrentHashMap<Object, Object>) obj;
                         data.put(point, map);
                     }
                     else {
@@ -86,7 +85,7 @@ public class ProtectHandler {
         });
     }
 
-    private void saveMap(My2DPoint point, HashMap<Object, Object> map, Logger logger) {
+    private void saveMap(My2DPoint point, ConcurrentHashMap<Object, Object> map, Logger logger) {
 
         int regionX = point.x / REGION_SIZE, regionY = point.y / REGION_SIZE;
         Path path = Paths.get(dataDir, regionX + "." + regionY, point.x + "." + point.y + ".bin");
@@ -133,16 +132,16 @@ public class ProtectHandler {
         final My2DPoint point = My2DPoint.fromChunk(c);
         executor.submit(() -> {
 
-            HashMap<Object, Object> map = data.remove(point);
-
-            if (map == SENTINEL) {
-
-                return;
-            }
+            ConcurrentHashMap<Object, Object> map = data.remove(point);
 
             if (map == null) {
 
                 logger.log(Level.WARNING, "cannot save data for chunk [{0}]: map is null", point);
+                return;
+            }
+
+            if (map == SENTINEL || map.isEmpty()) {
+
                 return;
             }
 
@@ -157,16 +156,16 @@ public class ProtectHandler {
             return;
         }
 
-        final ConcurrentHashMap.KeySetView<My2DPoint, HashMap<Object, Object>> keys = data.keySet();
+        final ConcurrentHashMap.KeySetView<My2DPoint, ConcurrentHashMap<Object, Object>> keys = data.keySet();
 
         for (final My2DPoint point : keys) {
 
             executor.submit(() -> {
 
                 // no need to remove since teardown in progress
-                HashMap<Object, Object> map = data.get(point);
+                ConcurrentHashMap<Object, Object> map = data.get(point);
 
-                if (map == SENTINEL || map == null) {
+                if (map == SENTINEL || map == null || map.isEmpty()) {
 
                     return;
                 }
@@ -210,10 +209,10 @@ public class ProtectHandler {
 
         My2DPoint point = My2DPoint.fromChunk(b.getChunk());
         //Bukkit.broadcastMessage("set: " + identity + " | " + point + " | " + My3DPoint.fromBlock(b));
-        HashMap<Object, Object> owners = data.get(point);
+        ConcurrentHashMap<Object, Object> owners = data.get(point);
         if (owners == SENTINEL) {
 
-            owners = new HashMap<>();
+            owners = new ConcurrentHashMap<>();
             data.put(point, owners);
         }
         else if (owners == null) {
@@ -230,7 +229,7 @@ public class ProtectHandler {
 
         My2DPoint point = My2DPoint.fromChunk(b.getChunk());
         //Bukkit.broadcastMessage("remove: " + point.toString());
-        HashMap<Object, Object> owners = data.get(point);
+        ConcurrentHashMap<Object, Object> owners = data.get(point);
         if (owners != SENTINEL) {
 
             owners.remove(My3DPoint.fromBlock(b));
@@ -242,7 +241,7 @@ public class ProtectHandler {
         //Bukkit.broadcastMessage("check: " + identity + " | " +
         //        My2DPoint.fromChunk(b.getChunk()) + " | " + My3DPoint.fromBlock(b));
 
-        HashMap<Object, Object> owners = data.get(My2DPoint.fromChunk(b.getChunk()));
+        ConcurrentHashMap<Object, Object> owners = data.get(My2DPoint.fromChunk(b.getChunk()));
 
         if (owners == SENTINEL) {
 

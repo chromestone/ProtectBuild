@@ -61,7 +61,6 @@ public class MyListener implements Listener {
     @EventHandler
     public void onChunkLoad(ChunkLoadEvent event) {
 
-        //plugin.getServer().broadcastMessage(My2DPoint.fromChunk(event.getChunk()).toString());
         if (event.getWorld().getEnvironment() == World.Environment.NORMAL) {
 
             handler.loadChunk(event.getChunk(), plugin.getLogger());
@@ -71,7 +70,6 @@ public class MyListener implements Listener {
     @EventHandler
     public void onChunkUnload(ChunkUnloadEvent event) {
 
-        //plugin.getServer().broadcastMessage(My2DPoint.fromChunk(event.getChunk()).toString());
         if (event.getWorld().getEnvironment() == World.Environment.NORMAL) {
 
             handler.unloadChunk(event.getChunk(), plugin.getLogger());
@@ -107,21 +105,22 @@ public class MyListener implements Listener {
                 return;
             }
 
-            Integer identity = wrapped.get();
-
             Action action = event.getAction();
-            Block target;
 
-            if (action == Action.LEFT_CLICK_BLOCK) {
+            if (action == Action.RIGHT_CLICK_BLOCK) {
 
-                target = block;
+                Material material = block.getType();
+                //TODO make enum set if we find out more communal blocks exist
+                if (material == Material.CRAFTING_TABLE || material == Material.ENCHANTING_TABLE) {
+
+                    return;
+                }
             }
-            else {
 
-                target = block.getRelative(event.getBlockFace());
-            }
+            Integer identity = wrapped.get();
+            Block target = block.getRelative(event.getBlockFace());
 
-            Optional<Boolean> isOwner = handler.isBlockOwner(block, identity);
+            Optional<Boolean> isOwner = handler.isBlockOwner(target, identity);
             if (!isOwner.isPresent()) {
 
                 event.setCancelled(true);
