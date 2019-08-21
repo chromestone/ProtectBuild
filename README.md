@@ -1,7 +1,7 @@
 # ProtectBuild
 A Spigot Minecraft 1.14 Plugin
 
-** This is currently in _BETA_. Use at your own risk. **
+**This is currently in _BETA_. Use at your own risk.**
 
 The goal is to _reduce_ griefing.
 
