@@ -12,8 +12,8 @@ public class My2DPoint implements Serializable {
 
     private static final long serialVersionUID = -389399447051164051L;
 
-    final int x;
-    final int y;
+    public final int x;
+    public final int y;
 
     public My2DPoint(int x, int y) {
 
@@ -21,7 +21,7 @@ public class My2DPoint implements Serializable {
         this.y = y;
     }
 
-    static My2DPoint fromChunk(Chunk c) {
+    public static My2DPoint fromChunk(Chunk c) {
 
         return new My2DPoint(c.getX(), c.getZ());
     }

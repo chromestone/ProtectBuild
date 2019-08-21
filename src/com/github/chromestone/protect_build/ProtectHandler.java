@@ -1,6 +1,6 @@
 package com.github.chromestone.protect_build;
 
-import org.bukkit.*;
+import org.bukkit.Chunk;
 import org.bukkit.block.Block;
 
 import java.io.*;
@@ -162,7 +162,7 @@ public class ProtectHandler {
 
             executor.submit(() -> {
 
-                // no need to remove since teardown in progress
+                // no need to remove
                 ConcurrentHashMap<Object, Object> map = data.get(point);
 
                 if (map == SENTINEL || map == null || map.isEmpty()) {
@@ -208,7 +208,6 @@ public class ProtectHandler {
     public boolean setBlockOwner(Block b, Integer identity) {
 
         My2DPoint point = My2DPoint.fromChunk(b.getChunk());
-        //Bukkit.broadcastMessage("set: " + identity + " | " + point + " | " + My3DPoint.fromBlock(b));
         ConcurrentHashMap<Object, Object> owners = data.get(point);
         if (owners == SENTINEL) {
 
@@ -228,7 +227,6 @@ public class ProtectHandler {
     public void removeBlockOwner(Block b) {
 
         My2DPoint point = My2DPoint.fromChunk(b.getChunk());
-        //Bukkit.broadcastMessage("remove: " + point.toString());
         ConcurrentHashMap<Object, Object> owners = data.get(point);
         if (owners != SENTINEL) {
 
@@ -237,9 +235,6 @@ public class ProtectHandler {
     }
 
     public Optional<Boolean> isBlockOwner(Block b, Integer identity) {
-
-        //Bukkit.broadcastMessage("check: " + identity + " | " +
-        //        My2DPoint.fromChunk(b.getChunk()) + " | " + My3DPoint.fromBlock(b));
 
         ConcurrentHashMap<Object, Object> owners = data.get(My2DPoint.fromChunk(b.getChunk()));
 

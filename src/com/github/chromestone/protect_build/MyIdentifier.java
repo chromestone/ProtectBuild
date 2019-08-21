@@ -1,5 +1,7 @@
 package com.github.chromestone.protect_build;
 
+import org.bukkit.Location;
+
 import java.io.*;
 import java.nio.file.*;
 import java.util.HashMap;
@@ -105,8 +107,9 @@ public class MyIdentifier {
 
     public void registerIdentity(UUID id) {
 
+        //TODO this might cause problems if you ever want to remove identities
         int size = identifier.size();
-        identifier.put(id, size);
+        identifier.put(id, new IntPointPair(size));
     }
 
     public Optional<Integer> getIdentity(UUID id, Logger logger) {
@@ -116,13 +119,56 @@ public class MyIdentifier {
 
             return Optional.empty();
         }
-        else if (obj instanceof Integer) {
+        else if (obj instanceof IntPointPair) {
 
-            return Optional.of((Integer) obj);
+            return Optional.of(((IntPointPair) obj).integer);
         }
 
-        logger.log(Level.SEVERE, "obtained value of type [{0}] from identifier", obj.getClass());
+        logger.log(Level.SEVERE, "obtained value of type [{0}] for [{1}] from identifier",
+                   new Object[]{obj.getClass(), id});
 
         return Optional.empty();
     }
+
+    public Optional<My3DPoint> setLocation(UUID id, Location location, Logger logger) {
+
+        Object obj = identifier.get(id);
+        if (obj == null) {
+
+            return Optional.empty();
+        }
+        else if (obj instanceof IntPointPair) {
+
+            IntPointPair pair = ((IntPointPair) obj);
+            My3DPoint tmp = pair.point;
+
+            pair.point = new My3DPoint(location.getBlockX(), location.getBlockY(), location.getBlockZ());
+
+            return Optional.ofNullable(tmp);
+        }
+
+        logger.log(Level.SEVERE, "obtained value of type [{0}] for [{1}] from identifier",
+                   new Object[]{obj.getClass(), id});
+
+        return Optional.empty();
+    }
+
+    public Optional<My3DPoint> getLocation(UUID id, Logger logger) {
+
+        Object obj = identifier.get(id);
+        if (obj == null) {
+
+            return Optional.empty();
+        }
+        else if (obj instanceof IntPointPair) {
+
+            return Optional.ofNullable(((IntPointPair) obj).point);
+        }
+
+        logger.log(Level.SEVERE, "obtained value of type [{0}] for [{1}] from identifier",
+                new Object[]{obj.getClass(), id});
+
+        return Optional.empty();
+    }
+
 }

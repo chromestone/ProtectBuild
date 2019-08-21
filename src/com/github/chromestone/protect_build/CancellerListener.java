@@ -92,7 +92,7 @@ public class CancellerListener implements Listener {
 
             checkRegistration(event, (Player) event.getEntity());
         }
-        else if (event.getEntityType() == EntityType.VILLAGER) {
+        else if (type == EntityType.VILLAGER || type == EntityType.WANDERING_TRADER) {
 
             EntityDamageEvent.DamageCause cause = event.getCause();
 
@@ -114,7 +114,7 @@ public class CancellerListener implements Listener {
 
             checkRegistration(event, (Player) event.getEntity());
         }
-        else if (type == EntityType.VILLAGER) {
+        else if (type == EntityType.VILLAGER || type == EntityType.WANDERING_TRADER) {
 
             if (event.getDamager() instanceof Player) {
 

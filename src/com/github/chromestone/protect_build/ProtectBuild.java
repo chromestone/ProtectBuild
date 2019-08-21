@@ -1,5 +1,6 @@
 package com.github.chromestone.protect_build;
 
+import com.github.chromestone.protect_build.command.*;
 import org.bukkit.*;
 import org.bukkit.block.BlockState;
 import org.bukkit.command.*;
@@ -20,23 +21,24 @@ public class ProtectBuild extends JavaPlugin {
 
     private static final String REGISTER_COMMAND = "register";
     private static final String SPAWN_COMMAND = "tpspawn";
+    private static final String HOME_COMMAND = "tphome";
+    private static final String SET_HOME_COMMAND = "settphome";
 
     //ticks per second
     private final static long TPS = 20;
 
     private MyIdentifier identifier = null;
     private ProtectHandler protectHandler = null;
-    private boolean doSpawnCooldown = false;
+
     private long spawnCooldown = -1;
-    private HashSet<UUID> spawnCooldownSet = null;
-    private Location spawnLocation = null;
+    private long homeCooldown = -1;
 
     @Override
     public void onEnable() {
 
         // take care of class attributes
 
-        String dataDir = this.getDataFolder().getAbsolutePath();
+        String dataDir = getDataFolder().getAbsolutePath();
 
         this.identifier = new MyIdentifier(dataDir);
         boolean result = this.identifier.init(getLogger());
@@ -46,11 +48,11 @@ public class ProtectBuild extends JavaPlugin {
             return;
         }
 
-        this.protectHandler = new ProtectHandler(this.getDataFolder().getAbsolutePath());
+        this.protectHandler = new ProtectHandler(getDataFolder().getAbsolutePath());
 
         // take care of configuration
 
-        this.saveDefaultConfig();
+        saveDefaultConfig();
 
         FileConfiguration config = getConfig();
 
@@ -69,7 +71,7 @@ public class ProtectBuild extends JavaPlugin {
                 cooldownTime *= TPS;
             }
 
-            PluginCommand pC = this.getCommand(REGISTER_COMMAND);
+            PluginCommand pC = getCommand(REGISTER_COMMAND);
             if (pC != null) {
 
                 pC.setExecutor(new RegisterCommand(this, this.identifier, passphrases,
@@ -87,12 +89,18 @@ public class ProtectBuild extends JavaPlugin {
                                            "please modify ProtectBuild/config.yml");
         }
 
+        // other configurations
+
         this.spawnCooldown = config.getLong("command-cooldown.spawn", 1800);
         if (this.spawnCooldown > 0) {
 
             this.spawnCooldown *= TPS;
-            spawnCooldownSet = new HashSet<>();
-            this.doSpawnCooldown = true;
+        }
+
+        this.homeCooldown = config.getLong(("command-cooldown.home"), 1800);
+        if (this.homeCooldown > 0) {
+
+            this.homeCooldown *= TPS;
         }
 
         int maxEntities = config.getInt("chunk-spawns-until");
@@ -150,13 +158,37 @@ public class ProtectBuild extends JavaPlugin {
                 return;
             }
 
+            PluginCommand pC;
+
+            pC = getCommand(HOME_COMMAND);
+            if (pC != null) {
+
+                pC.setExecutor(new HomeCommand(this, this.identifier,
+                                               this.homeCooldown, world.getUID()));
+            }
+            else {
+
+                getLogger().log(Level.SEVERE, "getCommand failed for /" + HOME_COMMAND);
+            }
+
             BlockState block;
 
             block = world.getBlockAt(0, 255, 0).getState();
             block.setType(Material.SMOOTH_QUARTZ_STAIRS);
             block.update(true);
 
-            spawnLocation = block.getLocation().clone();
+            pC = getCommand(SPAWN_COMMAND);
+            if (pC != null) {
+
+                pC.setExecutor(new SpawnCommand(this, this.identifier,
+                                                this.spawnCooldown, block.getLocation().clone()));
+            }
+            else {
+
+                getLogger().log(Level.SEVERE, "getCommand failed for /" + SPAWN_COMMAND);
+            }
+
+
 
             block = world.getBlockAt(0, 254, 0).getState();
             block.setType(Material.WATER);
@@ -164,7 +196,7 @@ public class ProtectBuild extends JavaPlugin {
 
             for (Chunk chunk : world.getLoadedChunks()) {
 
-                protectHandler.loadChunk(chunk, getLogger());
+                this.protectHandler.loadChunk(chunk, getLogger());
             }
         });
 
@@ -191,40 +223,33 @@ public class ProtectBuild extends JavaPlugin {
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
 
-        if (command.getName().equals(SPAWN_COMMAND)) {
+        if (command.getName().equals(SET_HOME_COMMAND)) {
 
             if (sender instanceof Player) {
 
                 Player player = (Player) sender;
-                final UUID id = player.getUniqueId();
 
-                Optional<Integer> wrapId = identifier.getIdentity(id, getLogger());
-                if (!wrapId.isPresent()) {
+                Location location = player.getLocation();
+                World world = location.getWorld();
+                if (world == null || world.getEnvironment() != World.Environment.NORMAL) {
 
+                    player.sendMessage(ChatColor.RED + "You can only use this command in the normal world.");
                     return true;
                 }
 
-                if ((doSpawnCooldown && spawnCooldownSet.contains(id))) {
+                Optional<My3DPoint> wrapper = this.identifier.setLocation(player.getUniqueId(),
+                                                                          location,
+                                                                          getLogger());
+                if (!wrapper.isPresent()) {
 
+                    player.sendMessage("Previous home at ?\nHome is set.");
                     return true;
                 }
+                else {
 
-                if (spawnLocation == null) {
-
-                    player.sendMessage("Command not setup properly. Contact admin?");
-                    return true;
+                    My3DPoint point = wrapper.get();
+                    player.sendMessage("Previous home at " + point + ".\nHome is set.");
                 }
-
-                if (doSpawnCooldown) {
-
-                    spawnCooldownSet.add(id);
-                    getServer().getScheduler()
-                               .runTaskLater(this,
-                                             () -> spawnCooldownSet.remove(id),
-                                             spawnCooldown);
-                }
-
-                player.teleport(spawnLocation);
             }
             else {
 
@@ -233,23 +258,22 @@ public class ProtectBuild extends JavaPlugin {
 
             return true;
         }
-
         return false;
     }
 
     @Override
     public void onDisable() {
 
-        if (identifier != null) {
+        if (this.identifier != null) {
 
-            identifier.save(getLogger());
-            identifier = null;
+            this.identifier.save(getLogger());
+            this.identifier = null;
         }
 
-        if (protectHandler != null) {
+        if (this.protectHandler != null) {
 
-            protectHandler.finalSave(getLogger());
-            protectHandler = null;
+            this.protectHandler.finalSave(getLogger());
+            this.protectHandler = null;
         }
     }
 }

@@ -12,9 +12,9 @@ public class My3DPoint implements Serializable {
 
     private static final long serialVersionUID = -3985671422828374378L;
 
-    final int x;
-    final int y;
-    final int z;
+    public final int x;
+    public final int y;
+    public final int z;
 
     public My3DPoint(int x, int y, int z) {
 
@@ -23,7 +23,7 @@ public class My3DPoint implements Serializable {
         this.z = z;
     }
 
-    static My3DPoint fromBlock(Block b) {
+    public static My3DPoint fromBlock(Block b) {
 
         return new My3DPoint(b.getX(), b.getY(), b.getZ());
     }

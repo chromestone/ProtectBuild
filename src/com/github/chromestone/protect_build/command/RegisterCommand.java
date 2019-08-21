@@ -1,5 +1,6 @@
-package com.github.chromestone.protect_build;
+package com.github.chromestone.protect_build.command;
 
+import com.github.chromestone.protect_build.MyIdentifier;
 import org.bukkit.command.*;
 import org.bukkit.entity.Player;
 import org.bukkit.plugin.java.JavaPlugin;
@@ -26,7 +27,7 @@ public class RegisterCommand implements CommandExecutor {
     private final int resistDuration;
     private final boolean applyResistance;
 
-    RegisterCommand(JavaPlugin plugin, MyIdentifier identifier, List<String> passwords,
+    public RegisterCommand(JavaPlugin plugin, MyIdentifier identifier, List<String> passwords,
                     long cooldownTime, int resistDuration) {
 
         this.plugin = plugin;
@@ -175,11 +176,12 @@ public class RegisterCommand implements CommandExecutor {
             }
 
             player.sendMessage("Welcome to the server. /help for help.");
+        }
+        else {
 
-            return true;
+            sender.sendMessage("Invalid.");
         }
 
-        sender.sendMessage("Invalid.");
         return true;
     }
 }

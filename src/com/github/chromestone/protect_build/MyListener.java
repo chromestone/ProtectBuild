@@ -90,12 +90,8 @@ public class MyListener implements Listener {
 
         Block block = event.getClickedBlock();
 
-        if (block != null) {
-
-            if (block.getWorld().getEnvironment() != World.Environment.NORMAL) {
-
-                return;
-            }
+        if (block != null &&
+            block.getWorld().getEnvironment() == World.Environment.NORMAL) {
 
             Player player = event.getPlayer();
             Optional<Integer> wrapped = identifier.getIdentity(player.getUniqueId(), plugin.getLogger());
@@ -107,9 +103,18 @@ public class MyListener implements Listener {
 
             Action action = event.getAction();
 
-            if (action == Action.RIGHT_CLICK_BLOCK) {
+            //Bukkit.broadcastMessage(action.toString());
+
+            //Block target = block.getRelative(event.getBlockFace());
+
+            //Bukkit.broadcastMessage(target.getType().toString());
+
+            boolean special = action == Action.RIGHT_CLICK_BLOCK;
+
+            if (special) {
 
                 Material material = block.getType();
+                //Bukkit.broadcastMessage(material.toString());
                 //TODO make enum set if we find out more communal blocks exist
                 if (material == Material.CRAFTING_TABLE || material == Material.ENCHANTING_TABLE) {
 
@@ -118,7 +123,7 @@ public class MyListener implements Listener {
             }
 
             Integer identity = wrapped.get();
-            Block target = block.getRelative(event.getBlockFace());
+            Block target = special ? block : block.getRelative(event.getBlockFace());
 
             Optional<Boolean> isOwner = handler.isBlockOwner(target, identity);
             if (!isOwner.isPresent()) {
