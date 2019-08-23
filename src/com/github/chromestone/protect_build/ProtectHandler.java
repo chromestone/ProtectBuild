@@ -98,6 +98,20 @@ public class ProtectHandler {
             return;
         }
 
+        if (map.isEmpty()) {
+
+            try {
+
+                Files.deleteIfExists(file.toPath());
+            }
+            catch (IOException e) {
+
+                logger.log(Level.SEVERE, "could not delete empty map file", e);
+            }
+
+            return;
+        }
+
         File parentFile = file.getParentFile();
         if (parentFile != null && !parentFile.exists()) {
 
@@ -140,7 +154,7 @@ public class ProtectHandler {
                 return;
             }
 
-            if (map == SENTINEL || map.isEmpty()) {
+            if (map == SENTINEL) {
 
                 return;
             }
@@ -165,7 +179,7 @@ public class ProtectHandler {
                 // no need to remove
                 ConcurrentHashMap<Object, Object> map = data.get(point);
 
-                if (map == SENTINEL || map == null || map.isEmpty()) {
+                if (map == SENTINEL || map == null) {
 
                     return;
                 }
@@ -182,13 +196,14 @@ public class ProtectHandler {
     public void finalSave(Logger logger) {
 
         logger.log(Level.INFO,
-                   "Attempting to save data for chunks... (can take up to 1 minute) please be patient.");
+                   "Attempting to save data for chunks... please be patient.");
 
         save(logger);
 
         try {
 
             executor.shutdown();
+            //TODO this can probably be configurable
             boolean result = executor.awaitTermination(1L, TimeUnit.MINUTES);
             if (!result) {
 

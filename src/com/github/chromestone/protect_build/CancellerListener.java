@@ -303,7 +303,17 @@ public class CancellerListener implements Listener {
             event.setCancelled(true);
         }
     }
+/*
+    @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
+    public void onPlayerItemConsume(PlayerItemConsumeEvent event) {
 
+        if (event.getPlayer().getWorld().getEnvironment() == World.Environment.NORMAL &&
+            event.getItem().getType() == Material.ENDER_PEARL) {
+
+            event.setCancelled(true);
+        }
+    }
+*/
     @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
     public void onPortalCreate(PortalCreateEvent event) {
 
@@ -352,21 +362,6 @@ public class CancellerListener implements Listener {
 
             event.setCancelled(true);
         }
-/* //default to warnings instead
-        else {
-
-            for (BlockState block : event.getBlocks()) {
-
-                final Location l = block.getLocation();
-                final int l_x = l.getBlockX(), l_z = l.getBlockZ();
-
-                if (l_x > 16 || l_x < -16 || l_z > 16 || l_z < -16) {
-
-                    block.setType(Material.AIR);//no clean way to get block before?
-                }
-            }
-        }
-*/
     }
 
     @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)

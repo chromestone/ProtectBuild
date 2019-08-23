@@ -104,6 +104,7 @@ public class MyListener implements Listener {
             Action action = event.getAction();
 
             //Bukkit.broadcastMessage(action.toString());
+            //Bukkit.broadcastMessage(block.getType().toString());
 
             //Block target = block.getRelative(event.getBlockFace());
 
@@ -159,8 +160,6 @@ public class MyListener implements Listener {
 
         Integer identity = wrapped.get();
         Block block = event.getBlock();
-
-        //plugin.getServer().broadcastMessage(My2DPoint.fromChunk(block.getChunk()).toString());
 
         Optional<Boolean> isOwner = handler.isBlockOwner(block, identity);
         if (!isOwner.isPresent()) {
