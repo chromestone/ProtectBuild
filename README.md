@@ -35,3 +35,20 @@ Saplings can only grow near spawn.
 
 ## Assumptions
 The server is using the normal "3" world system. (You can disable nether or the end dimensions.)
+
+## Motivation
+
+The core idea is that players should be able to build and have that build be off limits to other players.
+
+## Issues
+
+Minecraft is complex and this plugin likely has not covered all the corners. Pistons for example are still allowed. However, an emergent property from this plugin is that one can build a secure base using furnaces!
+
+It is hard to have the freedom of playing multiplayer vanilla Minecraft without a tradeoff with "grief security".
+
+You can also build around a build and that is a form of griefing. This leads me to todos.
+
+## Todo
+
+* Admin can get info about who owns a block.
+* Admin can remove blocks.
