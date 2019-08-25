@@ -4,13 +4,15 @@
 			Protect Build Minecraft Server
 		</title>
 		<script>
-			let client = new XMLHttpRequest();
-			client.open('GET', 'ip.txt');
-			client.onreadystatechange = function() {
-				let the_p = document.getElementById("the_p");
-				the_p.innerhtml = client.responseText;
+			window.onload = function() {
+				let client = new XMLHttpRequest();
+				client.open('GET', 'ip.txt');
+				client.onreadystatechange = function() {
+					let the_p = document.getElementById("the_p");
+					the_p.innerhtml = client.responseText;
+				}
+				client.send();
 			}
-			client.send();
 		</script>
 	</head>
 	<body>
