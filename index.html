@@ -9,7 +9,7 @@
 				client.open('GET', 'ip.txt');
 				client.onreadystatechange = function() {
 					let the_p = document.getElementById("the_p");
-					the_p.innerhtml = client.responseText;
+					the_p.innerHTML = client.responseText;
 				}
 				client.send();
 			}
