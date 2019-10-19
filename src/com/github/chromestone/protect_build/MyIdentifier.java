@@ -142,7 +142,7 @@ public class MyIdentifier {
             IntPointPair pair = ((IntPointPair) obj);
             My3DPoint tmp = pair.point;
 
-            pair.point = new My3DPoint(location.getBlockX(), location.getBlockY(), location.getBlockZ());
+            pair.point = new My3DPoint(location.getBlockX(), (int) Math.round(location.getY()), location.getBlockZ());
 
             return Optional.ofNullable(tmp);
         }

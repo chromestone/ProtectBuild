@@ -15,7 +15,8 @@ import java.util.logging.*;
  */
 public class ProtectHandler {
 
-    private static final int REGION_SIZE = 512;
+    // 32 chunks = 512 blocks
+    private static final double REGION_SIZE = 32;
     private static final ConcurrentHashMap<Object, Object> SENTINEL = new ConcurrentHashMap<>();
 
     private final String dataDir;
@@ -43,7 +44,8 @@ public class ProtectHandler {
         final My2DPoint point = My2DPoint.fromChunk(c);
         executor.submit(() -> {
 
-            int regionX = point.x / REGION_SIZE, regionY = point.y / REGION_SIZE;
+            int regionX = (int) Math.floor(point.x / REGION_SIZE),
+                regionY = (int) Math.floor(point.y / REGION_SIZE);
             Path path = Paths.get(dataDir, regionX + "." + regionY, point.x + "." + point.y + ".bin");
             File file = path.toFile();
 
@@ -87,7 +89,8 @@ public class ProtectHandler {
 
     private void saveMap(My2DPoint point, ConcurrentHashMap<Object, Object> map, Logger logger) {
 
-        int regionX = point.x / REGION_SIZE, regionY = point.y / REGION_SIZE;
+        int regionX = (int) Math.floor(point.x / REGION_SIZE),
+            regionY = (int) Math.floor(point.y / REGION_SIZE);
         Path path = Paths.get(dataDir, regionX + "." + regionY, point.x + "." + point.y + ".bin");
         File file = path.toFile();
 

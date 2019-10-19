@@ -49,7 +49,8 @@ public class CancellerListener implements Listener {
             Material.DARK_OAK_LEAVES,
             Material.JUNGLE_LEAVES,
             Material.OAK_LEAVES,
-            Material.SPRUCE_LEAVES);
+            Material.SPRUCE_LEAVES
+    );
 
     private final JavaPlugin plugin;
     private final MyIdentifier identifier;

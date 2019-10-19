@@ -10,7 +10,7 @@ import org.bukkit.event.world.*;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.potion.*;
 
-import java.util.Optional;
+import java.util.*;
 
 import static org.bukkit.event.EventPriority.HIGH;
 
@@ -19,6 +19,16 @@ import static org.bukkit.event.EventPriority.HIGH;
  * Created by Derek Zhang on 8/6/19.
  */
 public class MyListener implements Listener {
+
+    //TODO populate this as more blocks added or remove as functionality changes
+    private static final EnumSet<Material> INTERACT_ALLOWED = EnumSet.of(
+            Material.CRAFTING_TABLE,
+            Material.ENCHANTING_TABLE,
+            Material.GRINDSTONE,
+            Material.LOOM,
+            Material.STONECUTTER,
+            Material.CARTOGRAPHY_TABLE
+    );
 
     private final JavaPlugin plugin;
     private final MyIdentifier identifier;
@@ -116,8 +126,7 @@ public class MyListener implements Listener {
 
                 Material material = block.getType();
                 //Bukkit.broadcastMessage(material.toString());
-                //TODO make enum set if we find out more communal blocks exist
-                if (material == Material.CRAFTING_TABLE || material == Material.ENCHANTING_TABLE) {
+                if (INTERACT_ALLOWED.contains(material)) {
 
                     return;
                 }

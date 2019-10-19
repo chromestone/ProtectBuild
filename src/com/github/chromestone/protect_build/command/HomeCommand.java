@@ -3,6 +3,7 @@ package com.github.chromestone.protect_build.command;
 import com.github.chromestone.protect_build.MyIdentifier;
 import com.github.chromestone.protect_build.My3DPoint;
 import org.bukkit.*;
+import org.bukkit.block.*;
 import org.bukkit.command.*;
 import org.bukkit.entity.Player;
 import org.bukkit.plugin.java.JavaPlugin;
@@ -43,7 +44,7 @@ public class HomeCommand implements CommandExecutor {
 
         if (sender instanceof Player) {
 
-            Player player = (Player) sender;
+            final Player player = (Player) sender;
             final UUID id = player.getUniqueId();
 
             Optional<My3DPoint> wrapper = identifier.getLocation(id, plugin.getLogger());
@@ -70,13 +71,27 @@ public class HomeCommand implements CommandExecutor {
             }
 
             My3DPoint point = wrapper.get();
+
             World world = plugin.getServer().getWorld(worldId);
             if (world == null) {
 
                 player.sendMessage("Null world error. Contact admin?");
                 return true;
             }
-            player.teleport(new Location(world, point.x, point.y, point.z));
+
+            Block whereBlock = world.getBlockAt​(point.x, point.y, point.z);
+            Chunk whereChunk = world.getChunkAt(whereBlock);
+            if (!whereChunk.isLoaded()) {
+
+                player.sendMessage("Chunk not loaded, try again later.");
+                return true;
+            }
+
+            final Location whereLoc = new Location(world, point.x + 0.5, point.y, point.z + 0.5);
+            plugin.getServer()
+                    .getScheduler()
+                    .runTask(plugin,
+                            () -> player.teleport(whereLoc));
         }
         else {
 
