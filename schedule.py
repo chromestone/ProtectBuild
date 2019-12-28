@@ -58,16 +58,15 @@ if the_ip:
   time.sleep(LIFE_TIME)
   subprocess.run(['python3', '../retro_repo.py'])
 
-p.communicate(input=bytes('stop\n', 'utf-8'))
 try:
 
-  p.wait(timeout=5 * 60)
+  p.communicate(input=bytes('stop\n', 'utf-8'), timeout=5 * 60)
 except subprocess.TimeoutExpired:
 
   p.terminate()
-  # give extra time to shutdown. otherwise, let p terminate on shutdown
+  # give extra time to shutdown. otherwise, kill p via shutdown
   time.sleep(5 * 60)
 
-# let p2 terminate when shutdown happens
+# skip p2, kill p2 via shutdown
 
 subprocess.run(['sudo', 'shutdown', '-h', '+0'])
