@@ -318,8 +318,8 @@ public class CancellerListener implements Listener {
     @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
     public void onPortalCreate(PortalCreateEvent event) {
 
-        Bukkit.broadcastMessage(event.toString());
-        Bukkit.broadcastMessage(event.getReason().toString());
+        //Bukkit.broadcastMessage(event.toString());
+        //Bukkit.broadcastMessage(event.getReason().toString());
 
         final boolean netherPair = event.getReason() == PortalCreateEvent.CreateReason.NETHER_PAIR;
 
